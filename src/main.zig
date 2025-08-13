@@ -71,10 +71,3 @@ const posix = std.posix;
 const ITER = 1024;
 const LARGE = 1024 * 1024 * 512;
 const page_size_min = std.heap.page_size_min;
-
-
-test "test_slice" {
-    var rand_bytes = [8]u8{ 1, 2, 3, 4, 5, 6, 7, 8 };
-    const slice = @as([]u8, rand_bytes[0..]);
-    std.debug.print("The slice's type is {}\n", .{@TypeOf(slice)});
-}
