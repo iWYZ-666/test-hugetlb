@@ -55,19 +55,31 @@ fn test_normal() !void {
     try do_iter(mapped_mem);
 }
 
-fn do_iter(mapped_mem :[]u8) !void {
-    const u64_map = std.mem.bytesAsSlice(u64, mapped_mem);
-    var rand_bytes: [8]u8 = undefined;
-    const slice = @as([]u8, rand_bytes[0..]);
-    try posix.getrandom(slice);
-    const rand_num = std.mem.readInt(u64, @ptrCast(slice), .little);
+fn do_iter(mapped_mem: []u8) !void {
     for (0..ITER) |_| {
-        @memset(u64_map, rand_num);
+        for (random_numbers) |i| {
+            mapped_mem[i] = @intCast(i & 0xff);
+        }
     }
 }
 
 const std = @import("std");
 const posix = std.posix;
-const ITER = 1024;
-const LARGE = 1024 * 1024 * 512;
+const ITER = 1024 * 16;
+const LARGE = 1024 * 1024 * 32;
+const MIN_PAGE = 4096;
+const RAND_COUNT = 4096 * 16;
 const page_size_min = std.heap.page_size_min;
+const random_numbers = init: {
+    const seed = @as(u64, 0x48693402);
+    var numbers: [RAND_COUNT]usize = undefined;
+    var prng = std.Random.DefaultPrng.init(seed);
+    const rand = prng.random();
+    for (&numbers) |*number| {
+        @setEvalBranchQuota(0xffffffff);
+        const base_value = rand.uintLessThan(usize, LARGE / MIN_PAGE) * MIN_PAGE;
+        const offset = rand.uintLessThan(usize, MIN_PAGE);
+        number.* = base_value + offset;
+    }
+    break: init numbers;
+};
